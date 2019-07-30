@@ -34,6 +34,7 @@ import hudson.model.ParameterDefinition;
 import hudson.model.ParametersDefinitionProperty;
 import net.sf.json.JSONObject;
 import org.jenkinsci.plugins.workflow.job.WorkflowJob;
+import org.jenkinsci.Symbol;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.Stapler;
@@ -75,12 +76,14 @@ public class PersistentBooleanParameterDefinition extends SimpleParameterDefinit
   public boolean isDefaultValue()
   {
     try
-    { 
+    {
 				System.out.println("Got Abstract Project");
       AbstractProject project = CurrentProject.getCurrentProject(this);
       if (project != null) {
       AbstractBuild build = (successfulOnly ? (AbstractBuild)project.getLastSuccessfulBuild() : project.getLastBuild());
-      return Boolean.parseBoolean(build.getBuildVariables().get(getName()).toString());
+      if (build != null) {
+          return Boolean.parseBoolean(build.getBuildVariables().get(getName()).toString());
+      }
     }else {
 				StaplerRequest sr = Stapler.getCurrentRequest();
 				//System.out.println("Ancestors of current request "  +sr.getAncestors());
@@ -90,11 +93,11 @@ public class PersistentBooleanParameterDefinition extends SimpleParameterDefinit
 					System.out.println("Trying to fetch lastbuild's Pipeline parameter values only when build is triggered");
 					WorkflowJob wj = Stapler.getCurrentRequest().findAncestorObject(WorkflowJob.class);
 					//FlowExecution fe;
-					
+
 					System.out.println("Env Vars " + wj.getLastBuild().getEnvVars());
 					System.out.println(
 							"PArameter value retrieved is " + wj.getLastBuild().getEnvVars().get(getName()).toString());
-					
+
 					return Boolean.parseBoolean(wj.getLastBuild().getEnvVars().get(getName()).toString());
 				}
       }
@@ -111,15 +114,15 @@ public class PersistentBooleanParameterDefinition extends SimpleParameterDefinit
 						System.out.println("INTERVAL : Env Vars " + wj.getLastBuild().getEnvVars());
 						System.out.println(
 								"INTERVAL :PArameter value retrieved is " + wj.getLastBuild().getEnvVars().get(getName()).toString());
-						
+
 						return Boolean.parseBoolean(wj.getLastBuild().getEnvVars().get(getName()).toString());
 		            }
-		             
+
 		      }
     }
     return defaultValue;
   }
-  
+
   public boolean isSuccessfulOnly()
   {
     return successfulOnly;
@@ -144,6 +147,7 @@ public class PersistentBooleanParameterDefinition extends SimpleParameterDefinit
     return new BooleanParameterValue(getName(), isDefaultValue(), getDescription());
   }
 
+  @Symbol("persistentBoolean")
   @Extension
   public static class DescriptorImpl extends ParameterDescriptor
   {

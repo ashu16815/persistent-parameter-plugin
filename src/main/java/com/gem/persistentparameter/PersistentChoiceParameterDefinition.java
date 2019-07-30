@@ -9,6 +9,8 @@ import hudson.model.ParameterDefinition;
 import hudson.model.StringParameterValue;
 import hudson.util.FormValidation;
 
+import org.jenkinsci.Symbol;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -61,8 +63,13 @@ public class PersistentChoiceParameterDefinition extends SimpleParameterDefiniti
   {
     if(defaultValue instanceof StringParameterValue)
     {
-      StringParameterValue value = (StringParameterValue)defaultValue;
-      return new PersistentChoiceParameterDefinition(getName(), getChoices(), value.value, successfulOnly, getDescription());
+      Object value = ((StringParameterValue) defaultValue).getValue();
+      return new PersistentChoiceParameterDefinition(
+        getName(),
+        getChoices(),
+        (value != null) ? value.toString() : "",
+        successfulOnly,
+        getDescription());
     }
     else
     {
@@ -78,12 +85,15 @@ public class PersistentChoiceParameterDefinition extends SimpleParameterDefiniti
     {
       AbstractProject project = CurrentProject.getCurrentProject(this);
       AbstractBuild build = (successfulOnly ? (AbstractBuild)project.getLastSuccessfulBuild() : project.getLastBuild());
-      def = build.getBuildVariables().get(getName()).toString();
+      if(build != null)
+      {
+        def = build.getBuildVariables().get(getName()).toString();
+      }
     }
     catch(Exception ex)
     {
     }
-    
+
     if(def != null && choices.indexOf(def) != 0)
     {
       List<String> c = new ArrayList<String>(choices);
@@ -91,7 +101,7 @@ public class PersistentChoiceParameterDefinition extends SimpleParameterDefiniti
       c.add(0, def);
       return c;
     }
-    
+
     return choices;
   }
 
@@ -113,8 +123,8 @@ public class PersistentChoiceParameterDefinition extends SimpleParameterDefiniti
 
   private StringParameterValue checkValue(StringParameterValue value)
   {
-    if(!choices.contains(value.value))
-      throw new IllegalArgumentException("Illegal choice: " + value.value);
+    if(!choices.contains(value.getValue()))
+      throw new IllegalArgumentException("Illegal choice: " + value.getValue());
     return value;
   }
 
@@ -131,6 +141,7 @@ public class PersistentChoiceParameterDefinition extends SimpleParameterDefiniti
     return checkValue(new StringParameterValue(getName(), value, getDescription()));
   }
 
+  @Symbol("persistentChoice")
   @Extension
   public static class DescriptorImpl extends ParameterDescriptor
   {
